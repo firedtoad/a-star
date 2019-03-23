@@ -50,10 +50,6 @@ void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
 {
     heuristic = heuristic_;//std::bind(heuristic_, _1, _2);
 }
-void AStar::Generator::SetCollision(CollisionFunction collision_)
-{
-    collision = collision_;//std::bind(heuristic_, _1, _2);
-}
 
 void AStar::Generator::addCollision(const Vec2i &coordinates_)
 {
@@ -149,13 +145,11 @@ void AStar::Generator::releaseNodes(NodeSet& nodes_)
 
 bool AStar::Generator::detectCollision(const Vec2i &coordinates_)
 {
-    if(collision&&collision(coordinates_))
-    {
-        return true;
-    }
     if (coordinates_.x < 0 || coordinates_.x >= worldSize.x ||
         coordinates_.y < 0 || coordinates_.y >= worldSize.y ||
-        std::find(walls.begin(), walls.end(), coordinates_) != walls.end()) {
+        std::find(walls.begin(), walls.end(), coordinates_) != walls.end()
+       ||(collision&&collision(coordinates_))
+    ) {
         return true;
     }
     return false;
