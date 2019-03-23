@@ -3,8 +3,8 @@
     Following tool is licensed under the terms and conditions of the ISC license.
     For more information visit https://opensource.org/licenses/ISC.
 */
-#ifndef __ASTAR_HPP_8F637DB91972F6C878D41D63F7E7214F__
-#define __ASTAR_HPP_8F637DB91972F6C878D41D63F7E7214F__
+#ifndef __ASTAR_HPP__
+#define __ASTAR_HPP__
 
 #include <vector>
 #include <functional>
@@ -18,9 +18,10 @@ namespace AStar
 
         bool operator == (const Vec2i& coordinates_);
     };
-
+    class Heuristic;
     using uint = unsigned int;
-    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
+//    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
+    using HeuristicFunction = uint (*)(const Vec2i&, const Vec2i&);
     using CoordinateList = std::vector<Vec2i>;
 
     struct Node
@@ -29,7 +30,7 @@ namespace AStar
         Vec2i coordinates;
         Node *parent;
 
-        Node(Vec2i coord_, Node *parent_ = nullptr);
+        Node(const Vec2i &coord_, Node *parent_ = nullptr);
         uint getScore();
     };
 
@@ -37,18 +38,18 @@ namespace AStar
 
     class Generator
     {
-        bool detectCollision(Vec2i coordinates_);
-        Node* findNodeOnList(NodeSet& nodes_, Vec2i coordinates_);
+        bool detectCollision(const Vec2i &coordinates_);
+        Node* findNodeOnList(const NodeSet& nodes_,const Vec2i &coordinates_);
         void releaseNodes(NodeSet& nodes_);
 
     public:
         Generator();
-        void setWorldSize(Vec2i worldSize_);
+        void setWorldSize(const Vec2i &worldSize_);
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
-        CoordinateList findPath(Vec2i source_, Vec2i target_);
-        void addCollision(Vec2i coordinates_);
-        void removeCollision(Vec2i coordinates_);
+        CoordinateList findPath(const Vec2i &source_,const Vec2i &target_);
+        void addCollision(const Vec2i &coordinates_);
+        void removeCollision(const Vec2i &coordinates_);
         void clearCollisions();
 
     private:
@@ -60,12 +61,12 @@ namespace AStar
 
     class Heuristic
     {
-        static Vec2i getDelta(Vec2i source_, Vec2i target_);
+        static Vec2i getDelta(const Vec2i &source_,const Vec2i &target_);
 
     public:
-        static uint manhattan(Vec2i source_, Vec2i target_);
-        static uint euclidean(Vec2i source_, Vec2i target_);
-        static uint octagonal(Vec2i source_, Vec2i target_);
+        static uint manhattan(const Vec2i &source_,const Vec2i &target_);
+        static uint euclidean(const Vec2i &source_,const Vec2i &target_);
+        static uint octagonal(const Vec2i &source_,const Vec2i &target_);
     };
 }
 
