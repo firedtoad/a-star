@@ -10,6 +10,7 @@
 #include <functional>
 #include <set>
 
+
 namespace AStar
 {
     struct Vec2i
@@ -22,6 +23,7 @@ namespace AStar
     using uint = unsigned int;
 //    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
     using HeuristicFunction = uint (*)(const Vec2i&, const Vec2i&);
+    using CollisionFunction = bool (*)(const Vec2i&);
     using CoordinateList = std::vector<Vec2i>;
 
     struct Node
@@ -47,6 +49,7 @@ namespace AStar
         void setWorldSize(const Vec2i &worldSize_);
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
+        void SetCollision(CollisionFunction collision_);
         CoordinateList findPath(const Vec2i &source_,const Vec2i &target_);
         void addCollision(const Vec2i &coordinates_);
         void removeCollision(const Vec2i &coordinates_);
@@ -54,6 +57,7 @@ namespace AStar
 
     private:
         HeuristicFunction heuristic;
+        CollisionFunction collision;
         CoordinateList direction, walls;
         Vec2i worldSize;
         uint directions;

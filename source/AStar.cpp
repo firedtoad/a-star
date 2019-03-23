@@ -26,7 +26,7 @@ AStar::uint AStar::Node::getScore()
     return G + H;
 }
 
-AStar::Generator::Generator()
+AStar::Generator::Generator():collision(nullptr)
 {
     setDiagonalMovement(false);
     setHeuristic(&Heuristic::manhattan);
@@ -49,6 +49,10 @@ void AStar::Generator::setDiagonalMovement(bool enable_)
 void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
 {
     heuristic = heuristic_;//std::bind(heuristic_, _1, _2);
+}
+void AStar::Generator::SetCollision(CollisionFunction collision_)
+{
+    collision = collision_;//std::bind(heuristic_, _1, _2);
 }
 
 void AStar::Generator::addCollision(const Vec2i &coordinates_)
@@ -145,6 +149,10 @@ void AStar::Generator::releaseNodes(NodeSet& nodes_)
 
 bool AStar::Generator::detectCollision(const Vec2i &coordinates_)
 {
+    if(collision&&collision(coordinates_))
+    {
+        return true;
+    }
     if (coordinates_.x < 0 || coordinates_.x >= worldSize.x ||
         coordinates_.y < 0 || coordinates_.y >= worldSize.y ||
         std::find(walls.begin(), walls.end(), coordinates_) != walls.end()) {
