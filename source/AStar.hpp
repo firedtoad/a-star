@@ -8,18 +8,39 @@
 
 #include <vector>
 #include <functional>
-#include <set>
-
+#include <queue>
+#include <unordered_set>
+#include <unordered_map>
+#include <iostream>
 namespace AStar
 {
     struct Vec2i
     {
         int x, y;
 
-        bool operator == (const Vec2i& coordinates_);
+        bool operator == (const Vec2i& coordinates_) const;
     };
 
-    class Heuristic;
+    template<class T>
+    class NodeAlloc
+    {
+    public:
+        template<typename... _Args>
+        T* construct(_Args&&... __args)
+        {
+            auto p=alloc.allocate(1);
+            alloc.construct(p,std::forward<_Args>(__args)...);
+            return p;
+        }
+        void destroy(T* p)
+        {
+            alloc.destroy(p);
+            alloc.deallocate(p,sizeof(T));
+        }
+    private:
+        std::allocator<T> alloc;
+    };
+
     using uint = unsigned int;
 //    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
     using HeuristicFunction = uint (*)(const Vec2i&, const Vec2i&);
@@ -37,13 +58,34 @@ namespace AStar
         uint getScore();
     };
 
-    using NodeSet = std::set<Node*>;
+    struct CoordHash
+    {
+        size_t operator ()(const Vec2i &coord) const
+        {
+            return coord.x*1000+coord.y;
+        }
+    };
+
+    auto comp=[](Node *pNode1,Node *pNode2){
+        return pNode1->getScore()>=pNode2->getScore();
+    };
+
+//    using NodeSet = std::set<Node*>;
+    using NodeSet = std::unordered_set<Node*>;
+//    using NodeHeap=std::priority_queue<Node*,std::vector<Node*>,decltype(comp)>;
+    using NodeHeap=std::vector<Node*>;
+    using CoordMap = std::unordered_map<Vec2i,Node*,CoordHash>;
+    using Alloc=NodeAlloc<Node>;
+//    using Alloc=boost::object_pool<Node>;
 
     class Generator
     {
         bool detectCollision(const Vec2i &coordinates_);
         Node* findNodeOnList(const NodeSet& nodes_,const Vec2i &coordinates_);
+        Node* findNodeOnMap(const CoordMap& nodes_,const Vec2i &coordinates_);
         void releaseNodes(NodeSet& nodes_);
+        void releaseNodes(CoordMap& nodes_);
+        void releaseNodes(NodeHeap& nodes_);
 
     public:
         Generator();
@@ -66,12 +108,12 @@ namespace AStar
         CoordinateList direction, walls;
         Vec2i worldSize;
         uint directions;
+        Alloc alloc;
     };
 
     class Heuristic
     {
         static Vec2i getDelta(const Vec2i &source_,const Vec2i &target_);
-
     public:
         static uint manhattan(const Vec2i &source_,const Vec2i &target_);
         static uint euclidean(const Vec2i &source_,const Vec2i &target_);
