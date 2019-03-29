@@ -8,10 +8,8 @@
 
 #include <vector>
 #include <functional>
-#include <queue>
 #include <unordered_set>
 #include <unordered_map>
-#include <iostream>
 namespace AStar
 {
     struct Vec2i
@@ -55,19 +53,19 @@ namespace AStar
         Node *parent;
 
         Node(const Vec2i &coord_, Node *parent_ = nullptr);
-        uint getScore();
+        uint getScore() const;
     };
 
     struct CoordHash
     {
         size_t operator ()(const Vec2i &coord) const
         {
-            return coord.x*1000+coord.y;
+            return coord.x*100000+coord.y;
         }
     };
 
     auto comp=[](Node *pNode1,Node *pNode2){
-        return pNode1->getScore()>=pNode2->getScore();
+        return pNode1->getScore()>pNode2->getScore();
     };
 
 //    using NodeSet = std::set<Node*>;

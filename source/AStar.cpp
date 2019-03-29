@@ -1,6 +1,7 @@
 #include "AStar.hpp"
 #include <cmath>
 #include <algorithm>
+#include <ostream>
 bool AStar::Vec2i::operator == (const Vec2i& coordinates_) const
 {
     return (x == coordinates_.x && y == coordinates_.y);
@@ -22,7 +23,7 @@ AStar::Node::Node(const Vec2i &coordinates_,Node *parent_)
     G = H = 0;
 }
 
-AStar::uint AStar::Node::getScore()
+AStar::uint AStar::Node::getScore() const
 {
     return G + H;
 }
@@ -78,21 +79,27 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
     }
     Node *current=nullptr;
     std::vector<Node*> openHeap;
+    CoordMap openMap;
     CoordMap closedMap;
-    openHeap.emplace_back(alloc.construct(source_));
+    auto pNode=alloc.construct(source_);
+    openHeap.emplace_back(pNode);
     std::push_heap(openHeap.begin(), openHeap.end(), comp);
+    openMap[pNode->coordinates]=pNode;
     while (!openHeap.empty()) {
         current = &(*openHeap.front());
         if (current->coordinates == target_) {
             break;
         }
-
         closedMap[current->coordinates]=current;
         std::pop_heap(openHeap.begin(), openHeap.end(), comp);
         openHeap.pop_back();
-
+        openMap.erase(current->coordinates);
         for (uint i = 0; i < directions; ++i) {
             Vec2i newCoordinates(current->coordinates + direction[i]);
+            if(openMap.find(newCoordinates)!=openMap.end())
+            {
+                continue;
+            }
             Node *successor=nullptr;
             if (detectCollision(newCoordinates) ||
                     (successor=findNodeOnMap(closedMap, newCoordinates))) {
@@ -106,6 +113,7 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
                 successor->H = heuristic(successor->coordinates, target_);
                 openHeap.emplace_back(successor);
                 std::push_heap(openHeap.begin(), openHeap.end(), comp);
+                openMap[newCoordinates]=successor;
             }
             else if (totalCost < successor->G) {
                 successor->parent = current;
@@ -122,9 +130,9 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
     while (current != nullptr) {
         if(reverse)
         {
-            path.emplace(path.begin(),current->coordinates);
+            path.emplace(path.begin(),std::move(current->coordinates));
         }else{
-            path.emplace_back(current->coordinates);
+            path.emplace_back(std::move(current->coordinates));
         }
         current = current->parent;
     }
