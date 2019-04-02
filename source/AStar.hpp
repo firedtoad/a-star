@@ -33,7 +33,7 @@ namespace AStar
         void destroy(T* p)
         {
             alloc.destroy(p);
-            alloc.deallocate(p,sizeof(T));
+            alloc.deallocate(p,1);
         }
     private:
         std::allocator<T> alloc;
@@ -64,7 +64,7 @@ namespace AStar
         }
     };
 
-    auto comp=[](Node *pNode1,Node *pNode2){
+    auto comp=[](const Node *pNode1,const Node *pNode2){
         return pNode1->getScore()>pNode2->getScore();
     };
 

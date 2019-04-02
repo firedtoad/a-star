@@ -82,6 +82,7 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
     CoordMap openMap;
     CoordMap closedMap;
     auto pNode=alloc.construct(source_);
+//    auto pNode=new Node(source_);
     openHeap.emplace_back(pNode);
     std::push_heap(openHeap.begin(), openHeap.end(), comp);
     openMap[pNode->coordinates]=pNode;
@@ -109,6 +110,7 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
             uint totalCost = current->G + ((i < 4) ? 10 : 14);
             if (successor == nullptr) {
                 successor=alloc.construct(newCoordinates,current);
+//                successor=new Node(newCoordinates,current);
                 successor->G = totalCost;
                 successor->H = heuristic(successor->coordinates, target_);
                 openHeap.emplace_back(successor);
@@ -197,7 +199,7 @@ bool AStar::Generator::detectCollision(const Vec2i &coordinates_)
 
 AStar::Vec2i AStar::Heuristic::getDelta(const Vec2i &source_,const Vec2i &target_)
 {
-    return{ abs(source_.x - target_.x),  abs(source_.y - target_.y) };
+    return { abs(source_.x - target_.x),  abs(source_.y - target_.y) };
 }
 
 AStar::uint AStar::Heuristic::manhattan(const Vec2i &source_,const Vec2i &target_)
