@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <ostream>
+#include <iostream>
 bool AStar::Vec2i::operator == (const Vec2i& coordinates_) const
 {
     return (x == coordinates_.x && y == coordinates_.y);
@@ -77,27 +78,32 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
     {
         return {};
     }
+    auto delta=Heuristic::getDelta(source_,target_);
+    auto dist=std::max(delta.x,delta.y)+1;
     Node *current=nullptr;
-    std::vector<Node*> openHeap;
-    CoordMap openMap;
+    std::unordered_set<Vec2i,CoordHash> openSet;
+    std::vector<Node> openHeap;
+    openHeap.reserve(dist*5);
     CoordMap closedMap;
-    auto pNode=alloc.construct(source_);
-//    auto pNode=new Node(source_);
-    openHeap.emplace_back(pNode);
+    openSet.reserve(dist*6);
+    closedMap.reserve(dist*2);
+    openHeap.emplace_back(source_);
     std::push_heap(openHeap.begin(), openHeap.end(), comp);
-    openMap[pNode->coordinates]=pNode;
+    openSet.emplace(source_);
     while (!openHeap.empty()) {
-        current = &(*openHeap.front());
+        current = &openHeap.front();
         if (current->coordinates == target_) {
             break;
         }
-        closedMap[current->coordinates]=current;
+        auto coord=current->coordinates;
+        closedMap[coord]=*current;
         std::pop_heap(openHeap.begin(), openHeap.end(), comp);
         openHeap.pop_back();
-        openMap.erase(current->coordinates);
+        openSet.erase(coord);
+        current=&closedMap[coord];
         for (uint i = 0; i < directions; ++i) {
             Vec2i newCoordinates(current->coordinates + direction[i]);
-            if(openMap.find(newCoordinates)!=openMap.end())
+            if(openSet.find(newCoordinates)!=openSet.end())
             {
                 continue;
             }
@@ -106,16 +112,14 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
                     (successor=findNodeOnMap(closedMap, newCoordinates))) {
                 continue;
             }
-
             uint totalCost = current->G + ((i < 4) ? 10 : 14);
             if (successor == nullptr) {
-                successor=alloc.construct(newCoordinates,current);
-//                successor=new Node(newCoordinates,current);
-                successor->G = totalCost;
-                successor->H = heuristic(successor->coordinates, target_);
-                openHeap.emplace_back(successor);
+                openHeap.emplace_back(newCoordinates,current);
+                auto &ref=openHeap.back();
+                ref.G=totalCost;
+                ref.H=heuristic(ref.coordinates, target_);
                 std::push_heap(openHeap.begin(), openHeap.end(), comp);
-                openMap[newCoordinates]=successor;
+                openSet.emplace(std::move(newCoordinates));
             }
             else if (totalCost < successor->G) {
                 successor->parent = current;
@@ -123,6 +127,7 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
             }
         }
     }
+
     CoordinateList path;
     bool reverse=false;
     if(current->coordinates==target_)
@@ -138,51 +143,17 @@ AStar::CoordinateList AStar::Generator::findPath(const Vec2i &source_,const Vec2
         }
         current = current->parent;
     }
-
-    releaseNodes(openHeap);
-    releaseNodes(closedMap);
-
     return path;
 }
 
-AStar::Node* AStar::Generator::findNodeOnList(const NodeSet& nodes_,const Vec2i &coordinates_)
-{
-    for (auto &node : nodes_) {
-        if (node->coordinates == coordinates_) {
-            return node;
-        }
-    }
-    return nullptr;
-}
-AStar::Node* AStar::Generator::findNodeOnMap(const CoordMap& nodes_,const Vec2i &coordinates_)
+AStar::Node* AStar::Generator::findNodeOnMap(CoordMap& nodes_,const Vec2i &coordinates_)
 {
     const auto &it=nodes_.find(coordinates_);
     if(it!=nodes_.end())
     {
-        return it->second;
+        return &it->second;
     }
     return nullptr;
-}
-
-void AStar::Generator::releaseNodes(NodeSet& nodes_)
-{
-    for (auto it:nodes_) {
-        alloc.destroy(it);
-    }
-}
-
-void AStar::Generator::releaseNodes(CoordMap& nodes_)
-{
-    for (const auto &it:nodes_) {
-        alloc.destroy(it.second);
-    }
-}
-
-void AStar::Generator::releaseNodes(NodeHeap& nodes_)
-{
-    for (const auto &it:nodes_) {
-        alloc.destroy(it);
-    }
 }
 
 bool AStar::Generator::detectCollision(const Vec2i &coordinates_)
