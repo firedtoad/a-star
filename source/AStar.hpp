@@ -8,8 +8,8 @@
 
 #include <vector>
 #include <functional>
-#include <unordered_set>
-#include <unordered_map>
+#include "unordered_map.hpp"
+#include "flat_hash_map.hpp"
 namespace AStar
 {
     struct Vec2i
@@ -22,6 +22,7 @@ namespace AStar
     using uint = unsigned int;
 //    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
     using HeuristicFunction = uint (*)(const Vec2i&, const Vec2i&);
+    using RelaxFuncion = float (*)(float e,int n,int len);
 //    using CollisionFunction = bool (*)(const Vec2i&);
     using CollisionFunction = std::function<bool(const Vec2i&)>;
     using CoordinateList = std::vector<Vec2i>;
@@ -48,7 +49,7 @@ namespace AStar
         return pNode1.getScore()>pNode2.getScore();
     };
     using NodeHeap=std::vector<Node>;
-    using CoordMap = std::unordered_map<Vec2i,Node,CoordHash>;
+    using CoordMap = ska::unordered_map<Vec2i,Node,CoordHash>;
     class Generator
     {
         bool detectCollision(const Vec2i &coordinates_);
@@ -57,6 +58,8 @@ namespace AStar
         Generator();
         void setWorldSize(const Vec2i &worldSize_);
         void setDiagonalMovement(bool enable_);
+        void setWeight(float epsilon_);
+        void setRelaxFuncion(RelaxFuncion relaxer_);
         void setHeuristic(HeuristicFunction heuristic_);
         template<typename F>
         void SetCollision(F &&collison_)
@@ -71,11 +74,18 @@ namespace AStar
     private:
         HeuristicFunction heuristic;
         CollisionFunction collision;
+        RelaxFuncion      relaxer;
         CoordinateList direction, walls;
         Vec2i worldSize;
+        float epsilon;
         uint directions;
     };
-
+    class Relaxer
+    {
+    public:
+        static float dynamic_weight(float e ,int n, int len);
+        static float static_weight(float e ,int n, int len);
+    };
     class Heuristic
     {
     public:
